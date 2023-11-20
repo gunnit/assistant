@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+
+
+{% block title %}Ask OpenAI{% endblock %}
+
+
+{% block content %}
+<a href="{% url 'logout' %}">Logout</a>
+    <div id="conversation"></div>
+
+    <form id="askForm">
+        <label for="question">Ask a question:</label>
+        <input type="text" id="question" name="question" required>
+        <input type="submit" value="Ask">
+    </form>
+
+    <script>
+        document.getElementById('askForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const question = document.getElementById('question').value;
+            fetch('{% url "ask_openai" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Update the conversation with the response
+                    updateConversation(data.conversation);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    
+        function updateConversation(conversationHistory) {
+            const conversationDiv = document.getElementById('conversation');
+            conversationHistory.forEach(message => {
+                let messageClass = message.role === 'user' ? 'user' : 'assistant';
+                let newMessage = `<div class="message ${messageClass}">${message.content}</div>`;
+                conversationDiv.innerHTML += newMessage;
+            });
+            document.getElementById('question').value = ''; // Clear input field
+            conversationDiv.scrollTop = conversationDiv.scrollHeight; // Scroll to bottom
+        }
+    </script>
+    {% endblock %}
+
+    {% block extra_js %}
+    {% endblock %}
